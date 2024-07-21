@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRUD Operations with NestJS</title>
+</head>
+<body>
+  <h1>CRUD Operations with NestJS</h1>
+
+  <h2>Users</h2>
+  <form id="user-form">
+    <input type="hidden" id="user-id" />
+    <label for="username">Username:</label>
+    <input type="text" id="username" required />
+    <label for="password">Password:</label>
+    <input type="password" id="password" required />
+    <button type="submit">Save User</button>
+  </form>
+  <ul id="user-list"></ul>
+
+  <h2>Posts</h2>
+  <form id="post-form">
+    <input type="hidden" id="post-id" />
+    <label for="title">Title:</label>
+    <input type="text" id="title" required />
+    <label for="content">Content:</label>
+    <textarea id="content" required></textarea>
+    <label for="user">User ID:</label>
+    <input type="text" id="user" required />
+    <button type="submit">Save Post</button>
+  </form>
+  <ul id="post-list"></ul>
+
+  <script>
+    const API_URL = 'http://localhost:3000';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadUsers();
+      loadPosts();
+
+      document.getElementById('user-form').addEventListener('submit', saveUser);
+      document.getElementById('post-form').addEventListener('submit', savePost);
+    });
+
+    async function loadUsers() {
+      try {
+        const response = await fetch(`${API_URL}/users`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const users = await response.json();
+        const userList = document.getElementById('user-list');
+        userList.innerHTML = '';
+        users.forEach(user => {
+          const li = document.createElement('li');
+          li.innerHTML = `${user.username} (ID: ${user._id}) <button onclick="editUser('${user._id}', '${user.username}')">Edit</button> <button onclick="deleteUser('${user._id}')">Delete</button>`;
+          userList.appendChild(li);
+        });
+      } catch (error) {
+        console.error('Failed to load users:', error);
+      }
+    }
+
+    async function loadPosts() {
+      try {
+        const response = await fetch(`${API_URL}/posts`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const posts = await response.json();
+        const postList = document.getElementById('post-list');
+        postList.innerHTML = '';
+        posts.forEach(post => {
+          const li = document.createElement('li');
+          li.innerHTML = `${post.title} by ${post.user.username} <button onclick="editPost('${post._id}', '${post.title}', '${post.content}', '${post.user._id}')">Edit</button> <button onclick="deletePost('${post._id}')">Delete</button>`;
+          postList.appendChild(li);
+        });
+      } catch (error) {
+        console.error('Failed to load posts:', error);
+      }
+    }
+
+    async function saveUser(event) {
+      event.preventDefault();
+      const id = document.getElementById('user-id').value;
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const user = { username, password };
+
+      try {
+        if (id) {
+          await fetch(`${API_URL}/users/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(user)
+          });
+        } else {
+          await fetch(`${API_URL}/users`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(user)
+          });
+        }
+
+        document.getElementById('user-form').reset();
+        loadUsers();
+      } catch (error) {
+        console.error('Failed to save user:', error);
+      }
+    }
+
+    async function savePost(event) {
+      event.preventDefault();
+      const id = document.getElementById('post-id').value;
+      const title = document.getElementById('title').value;
+      const content = document.getElementById('content').value;
+      const user = document.getElementById('user').value;
+
+      if (!validateObjectId(user)) {
+        alert('Invalid User ID');
+        return;
+      }
+
+      const post = { title, content, user };
+
+      try {
+        if (id) {
+          await fetch(`${API_URL}/posts/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(post)
+          });
+        } else {
+          await fetch(`${API_URL}/posts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(post)
+          });
+        }
+
+        document.getElementById('post-form').reset();
+        loadPosts();
+      } catch (error) {
+        console.error('Failed to save post:', error);
+      }
+    }
+
+    function editUser(id, username) {
+      document.getElementById('user-id').value = id;
+      document.getElementById('username').value = username;
+    }
+
+    async function deleteUser(id) {
+      try {
+        await fetch(`${API_URL}/users/${id}`, { method: 'DELETE' });
+        loadUsers();
+      } catch (error) {
+        console.error('Failed to delete user:', error);
+      }
+    }
+
+    function editPost(id, title, content, user) {
+      document.getElementById('post-id').value = id;
+      document.getElementById('title').value = title;
+      document.getElementById('content').value = content;
+      document.getElementById('user').value = user;
+    }
+
+    async function deletePost(id) {
+      try {
+        await fetch(`${API_URL}/posts/${id}`, { method: 'DELETE' });
+        loadPosts();
+      } catch (error) {
+        console.error('Failed to delete post:', error);
+      }
+    }
+
+    function validateObjectId(id) {
+      return /^[0-9a-fA-F]{24}$/.test(id);
+    }
+  </script>
+</body>
+</html>
