@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest'; 
-import { AppModule } from './../../src/app.module'; 
+import { AppModule } from '../src/app.module';
 
 describe('AuthController (e2e)', () => {
   let app: INestApplication;
@@ -15,12 +15,19 @@ describe('AuthController (e2e)', () => {
     await app.init();
   });
 
-  it('should return an access token', () => {
-    return request(app.getHttpServer())
+  it('should create a test user', async () => {
+    await request(app.getHttpServer())
+      .post('/users')
+      .send({ username: 'test', password: 'test' })
+      .expect(201);
+  });
+
+  it('should return an access token', async () => {
+    await request(app.getHttpServer())
       .post('/auth/login')
       .send({ username: 'test', password: 'test' })
-      .expect(200)
-      .then((response: request.Response) => { 
+      .expect(201) 
+      .then((response: request.Response) => {
         expect(response.body).toHaveProperty('access_token');
       });
   });
