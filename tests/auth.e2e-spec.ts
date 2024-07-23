@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import request from 'supertest'; 
+import request from 'supertest';
 import { AppModule } from '../src/app.module';
 
 describe('AuthController (e2e)', () => {
@@ -26,8 +26,8 @@ describe('AuthController (e2e)', () => {
     await request(app.getHttpServer())
       .post('/auth/login')
       .send({ username: 'test', password: 'test' })
-      .expect(201) 
-      .then((response: request.Response) => {
+      .expect(201)
+      .then((response) => {
         expect(response.body).toHaveProperty('access_token');
       });
   });

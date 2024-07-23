@@ -2,13 +2,19 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, isValidObjectId } from 'mongoose';
 import { Post, PostDocument } from './post.schema';
+import { UsersService } from '../users/users.service';
+import { UserDocument } from '../users/user.schema'; 
 
 @Injectable()
 export class PostsService {
-  constructor(@InjectModel(Post.name) private postModel: Model<PostDocument>) {}
+  constructor(
+    @InjectModel(Post.name) private postModel: Model<PostDocument>,
+    private readonly usersService: UsersService,
+  ) {}
 
   async findAll(): Promise<Post[]> {
     try {
+      console.log('Finding all posts');
       return await this.postModel.find().populate('user').exec();
     } catch (error) {
       console.error('Error finding posts:', error);
@@ -21,6 +27,7 @@ export class PostsService {
       throw new BadRequestException('Invalid Post ID');
     }
     try {
+      console.log(`Finding post with ID: ${id}`);
       const post = await this.postModel.findById(id).populate('user').exec();
       if (!post) {
         throw new NotFoundException(`Post with ID "${id}" not found`);
@@ -32,28 +39,37 @@ export class PostsService {
     }
   }
 
-  async create(post: Post): Promise<Post> {
-    if (!isValidObjectId(post.user)) {
-      throw new BadRequestException('Invalid User ID');
+  async create(postDto: { title: string; content: string; userId: string }): Promise<Post> {
+    const { title, content, userId } = postDto;
+    const user: UserDocument = await this.usersService.findOne(userId);
+    if (!user) {
+      throw new NotFoundException(`User with ID "${userId}" not found`);
     }
+
+    const post = new this.postModel({ title, content, user: user._id });
     try {
-      const createdPost = new this.postModel(post);
-      return await createdPost.save();
+      console.log('Creating new post');
+      return await post.save();
     } catch (error) {
       console.error('Error creating post:', error);
       throw error;
     }
   }
 
-  async update(id: string, post: Post): Promise<Post> {
-    if (!isValidObjectId(post.user)) {
-      throw new BadRequestException('Invalid User ID');
+  async update(id: string, postDto: { title: string; content: string; userId: string }): Promise<Post> {
+    const { title, content, userId } = postDto;
+    const user: UserDocument = await this.usersService.findOne(userId);
+    if (!user) {
+      throw new NotFoundException(`User with ID "${userId}" not found`);
     }
+
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid Post ID');
     }
+
     try {
-      const updatedPost = await this.postModel.findByIdAndUpdate(id, post, { new: true }).exec();
+      console.log(`Updating post with ID: ${id}`);
+      const updatedPost = await this.postModel.findByIdAndUpdate(id, { title, content, user: user._id }, { new: true }).exec();
       if (!updatedPost) {
         throw new NotFoundException(`Post with ID "${id}" not found`);
       }
@@ -69,6 +85,7 @@ export class PostsService {
       throw new BadRequestException('Invalid Post ID');
     }
     try {
+      console.log(`Removing post with ID: ${id}`);
       const result = await this.postModel.findByIdAndDelete(id).exec();
       if (!result) {
         throw new NotFoundException(`Post with ID "${id}" not found`);

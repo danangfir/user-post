@@ -1,33 +1,39 @@
-import { Controller, Get, Post as PostMethod, Delete, Put, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, BadRequestException } from '@nestjs/common';
 import { PostsService } from './posts.service';
-import { Post as BlogPost } from './post.schema';
+import { Post as PostModel } from './post.schema';
 
 @Controller('posts')
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
   @Get()
-  findAll(): Promise<BlogPost[]> {
+  async findAll(): Promise<PostModel[]> {
     return this.postsService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string): Promise<BlogPost> {
+  async findOne(@Param('id') id: string): Promise<PostModel> {
     return this.postsService.findOne(id);
   }
 
-  @PostMethod()
-  create(@Body() post: BlogPost): Promise<BlogPost> {
+  @Post()
+  async create(@Body() post: { title: string; content: string; userId: string }): Promise<PostModel> {
+    if (!post.userId) {
+      throw new BadRequestException('User ID is required');
+    }
     return this.postsService.create(post);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() post: BlogPost): Promise<BlogPost> {
+  async update(@Param('id') id: string, @Body() post: { title: string; content: string; userId: string }): Promise<PostModel> {
+    if (!post.userId) {
+      throw new BadRequestException('User ID is required');
+    }
     return this.postsService.update(id, post);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string): Promise<void> {
-    return this.postsService.remove(id);
+  async remove(@Param('id') id: string): Promise<void> {
+    await this.postsService.remove(id);
   }
 }
