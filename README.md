@@ -30,9 +30,11 @@ import { UsersController } from './users.controller';
 import { User, UserSchema } from './user.schema';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: User.name, schema: UserSchema }])],
-  controllers: [UsersController],
+  imports: [
+    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+  ],
   providers: [UsersService],
+  controllers: [UsersController],
   exports: [UsersService],
 })
 export class UsersModule {}
@@ -54,10 +56,14 @@ Contoh Kodenya:
 // auth.service.ts
 import { Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
-  constructor(private usersService: UsersService) {}
+  constructor(
+    private usersService: UsersService,
+    private jwtService: JwtService
+  ) {}
 
   async validateUser(username: string, password: string): Promise<any> {
     const user = await this.usersService.findOneByUsername(username);
@@ -66,6 +72,13 @@ export class AuthService {
       return result;
     }
     return null;
+  }
+
+  async login(user: any) {
+    const payload = { username: user.username, sub: user._id };
+    return {
+      access_token: this.jwtService.sign(payload),
+    };
   }
 }
 ```
@@ -84,36 +97,51 @@ MVC juga memudahkan pengembangan dan peningkatan fitur baru tanpa mempengaruhi k
 Contoh kodenya:
 ```typescript
 // posts.controller.ts
-import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, BadRequestException } from '@nestjs/common';
 import { PostsService } from './posts.service';
-import { Post as PostEntity } from './post.schema';
+import { Post as PostModel } from './post.schema';
 
 @Controller('posts')
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
   @Get()
-  async findAll(): Promise<PostEntity[]> {
+  async findAll(): Promise<PostModel[]> {
     return this.postsService.findAll();
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<PostEntity> {
+  async findOne(@Param('id') id: string): Promise<PostModel> {
+    if (!id || id.length !== 24) {
+      throw new BadRequestException('Invalid Post ID');
+    }
     return this.postsService.findOne(id);
   }
 
   @Post()
-  async create(@Body() createPostDto: PostEntity): Promise<PostEntity> {
-    return this.postsService.create(createPostDto);
+  async create(@Body() post: { title: string; content: string; userId: string }): Promise<PostModel> {
+    if (!post.userId) {
+      throw new BadRequestException('User ID is required');
+    }
+    return this.postsService.create(post);
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() updatePostDto: PostEntity): Promise<PostEntity> {
-    return this.postsService.update(id, updatePostDto);
+  async update(@Param('id') id: string, @Body() post: { title: string; content: string; userId: string }): Promise<PostModel> {
+    if (!post.userId) {
+      throw new BadRequestException('User ID is required');
+    }
+    if (!id || id.length !== 24) {
+      throw new BadRequestException('Invalid Post ID');
+    }
+    return this.postsService.update(id, post);
   }
 
   @Delete(':id')
   async remove(@Param('id') id: string): Promise<void> {
+    if (!id || id.length !== 24) {
+      throw new BadRequestException('Invalid Post ID');
+    }
     await this.postsService.remove(id);
   }
 }
@@ -133,7 +161,7 @@ Contoh kodenya:
 // tests/posts.e2e-spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from '../src/app.module';
 
 describe('PostsController (e2e)', () => {
@@ -158,9 +186,9 @@ describe('PostsController (e2e)', () => {
 
     await request(app.getHttpServer())
       .post('/posts')
-      .send({ title: 'Test Post', content: 'This is a test post', user: userId })
+      .send({ title: 'Test Post', content: 'This is a test post', userId })
       .expect(201)
-      .then((response: request.Response) => {
+      .then((response) => {
         expect(response.body).toHaveProperty('_id');
         expect(response.body.title).toBe('Test Post');
         expect(response.body.content).toBe('This is a test post');
@@ -172,7 +200,7 @@ describe('PostsController (e2e)', () => {
     await request(app.getHttpServer())
       .get('/posts')
       .expect(200)
-      .then((response: request.Response) => {
+      .then((response) => {
         expect(Array.isArray(response.body)).toBe(true);
       });
   });
@@ -181,5 +209,6 @@ describe('PostsController (e2e)', () => {
     await app.close();
   });
 });
+
 ```
 Pengujian ini memastikan bahwa endpoint `POST /posts` dapat membuat posting baru dan endpoint `GET /posts` dapat mengambil semua posting yang ada. Ini memverifikasi bahwa berbagai komponen aplikasi berfungsi bersama-sama dengan benar.
