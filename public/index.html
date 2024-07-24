@@ -88,13 +88,13 @@
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const posts = await response.json();
-        console.log('Posts loaded:', posts); // Tambahkan log ini
+        console.log('Posts loaded:', posts); 
         const postList = document.getElementById('post-list');
         postList.innerHTML = '';
         posts.forEach(post => {
           if (post.user) {
             const li = document.createElement('li');
-            li.innerHTML = `${post.title} by ${post.user.username} <button onclick="editPost('${post._id}', '${post.title}', '${post.content}', '${post.user._id}')">Edit</button> <button onclick="deletePost('${post._id}')">Delete</button>`;
+            li.innerHTML = `Post ID: ${post._id}, Title: ${post.title}, by ${post.user.username} <button onclick="editPost('${post._id}', '${post.title}', '${post.content}', '${post.user._id}')">Edit</button> <button onclick="deletePost('${post._id}')">Delete</button>`;
             postList.appendChild(li);
           } else {
             console.error('Post user is null:', post);

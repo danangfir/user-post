@@ -43,6 +43,9 @@ export class PostsService {
 
   async create(postDto: { title: string; content: string; userId: string }): Promise<Post> {
     const { title, content, userId } = postDto;
+    if (!isValidObjectId(userId)) {
+      throw new BadRequestException('Invalid User ID');
+    }
     const user: UserDocument = await this.usersService.findOne(userId);
     if (!user) {
       throw new NotFoundException(`User with ID "${userId}" not found`);
@@ -59,14 +62,16 @@ export class PostsService {
   }
 
   async update(id: string, postDto: { title: string; content: string; userId: string }): Promise<Post> {
+    if (!isValidObjectId(id)) {
+      throw new BadRequestException('Invalid Post ID');
+    }
     const { title, content, userId } = postDto;
+    if (!isValidObjectId(userId)) {
+      throw new BadRequestException('Invalid User ID');
+    }
     const user: UserDocument = await this.usersService.findOne(userId);
     if (!user) {
       throw new NotFoundException(`User with ID "${userId}" not found`);
-    }
-
-    if (!isValidObjectId(id)) {
-      throw new BadRequestException('Invalid Post ID');
     }
 
     try {

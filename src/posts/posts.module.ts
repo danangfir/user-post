@@ -8,7 +8,7 @@ import { UsersModule } from '../users/users.module';
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Post.name, schema: PostSchema }]),
-    UsersModule, // Pastikan UsersModule diimpor di sini
+    UsersModule,
   ],
   controllers: [PostsController],
   providers: [PostsService],
