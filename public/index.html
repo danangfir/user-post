@@ -3,7 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CRUD Operations with NestJS</title>
+  <title>User Post with NestJS</title>
+  <style>
+    label {
+      display: inline-block;
+      width: 100px;
+    }
+    form {
+      margin-bottom: 20px;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    ul li {
+      margin: 5px 0;
+    }
+    button {
+      margin-left: 10px;
+    }
+  </style>
 </head>
 <body>
   <h1>User Post with NestJS</h1>
@@ -69,12 +88,17 @@
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const posts = await response.json();
+        console.log('Posts loaded:', posts); // Tambahkan log ini
         const postList = document.getElementById('post-list');
         postList.innerHTML = '';
         posts.forEach(post => {
-          const li = document.createElement('li');
-          li.innerHTML = `${post.title} by ${post.user.username} <button onclick="editPost('${post._id}', '${post.title}', '${post.content}', '${post.user._id}')">Edit</button> <button onclick="deletePost('${post._id}')">Delete</button>`;
-          postList.appendChild(li);
+          if (post.user) {
+            const li = document.createElement('li');
+            li.innerHTML = `${post.title} by ${post.user.username} <button onclick="editPost('${post._id}', '${post.title}', '${post.content}', '${post.user._id}')">Edit</button> <button onclick="deletePost('${post._id}')">Delete</button>`;
+            postList.appendChild(li);
+          } else {
+            console.error('Post user is null:', post);
+          }
         });
       } catch (error) {
         console.error('Failed to load posts:', error);
@@ -115,14 +139,14 @@
       const id = document.getElementById('post-id').value;
       const title = document.getElementById('title').value;
       const content = document.getElementById('content').value;
-      const user = document.getElementById('user').value;
+      const userId = document.getElementById('user').value;
 
-      if (!validateObjectId(user)) {
+      if (!validateObjectId(userId)) {
         alert('Invalid User ID');
         return;
       }
 
-      const post = { title, content, user };
+      const post = { title, content, userId };
 
       try {
         if (id) {
@@ -160,11 +184,11 @@
       }
     }
 
-    function editPost(id, title, content, user) {
+    function editPost(id, title, content, userId) {
       document.getElementById('post-id').value = id;
       document.getElementById('title').value = title;
       document.getElementById('content').value = content;
-      document.getElementById('user').value = user;
+      document.getElementById('user').value = userId;
     }
 
     async function deletePost(id) {

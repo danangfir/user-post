@@ -15,12 +15,14 @@ export class PostsService {
   async findAll(): Promise<Post[]> {
     try {
       console.log('Finding all posts');
-      return await this.postModel.find().populate('user').exec();
+      const posts = await this.postModel.find().populate('user').exec();
+      console.log('Posts found:', posts);
+      return posts;
     } catch (error) {
       console.error('Error finding posts:', error);
       throw error;
     }
-  }
+  }  
 
   async findOne(id: string): Promise<Post> {
     if (!isValidObjectId(id)) {
