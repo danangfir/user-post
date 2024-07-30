@@ -41,6 +41,38 @@ export class UsersModule {}
 ```
 Modul ini memisahkan logika terkait pengguna, termasuk skema MongoDB dan layanan pengguna.
 
+Contoh Kode Module Utamanya:
+```typescript
+// app.module.ts
+import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { UsersModule } from './users/users.module';
+import { PostsModule } from './posts/posts.module';
+import { AuthModule } from './auth/auth.module';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get<string>('DATABASE_URL'),
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      }),
+      inject: [ConfigService],
+    }),
+    UsersModule,
+    PostsModule,
+    AuthModule,
+  ],
+})
+export class AppModule {}
+```
+`app.module.ts` adalah jantung konfigurasi aplikasi NestJS, mengatur koneksi database, memuat pengaturan, dan menggabungkan berbagai modul fitur untuk membangun aplikasi yang berfungsi secara optimal.
 ## Dependency Injection (DI)
 
 Dependency Injection adalah teknik di mana objek atau fungsi menerima dependensi yang mereka butuhkan dari luar, bukan menciptakan sendiri
